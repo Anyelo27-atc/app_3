@@ -1,51 +1,50 @@
 import { Component, inject, signal } from '@angular/core';
-import { Persona } from '../../interfaces/persona';
-import { form, min, required, FormField, maxDate } from '@angular/forms/signals';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { PrimerComponenteService } from '../../services/primer-componente.service';
+import { Resena } from '../../interfaces/Persona';
 
 @Component({
-  imports: [FormField],
   selector: 'app-primer-componente',
-  styleUrl: './primer-componente.css',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
   templateUrl: './primer-componente.html',
+  styleUrl: './primer-componente.css'
 })
 export class PrimerComponente {
+  service = inject(PrimerComponenteService);
 
-  private personaService = inject(PrimerComponenteService)
-  listaPersonas: Persona[]=[]
+  categoriaSeleccionada = signal<string>('Todas');
 
-  private personaModelo = signal<Persona>({
-    nombre: '',
-    edad: 0
-  })
+  nombreCliente = '';
+  comentarioCliente = '';
+  puntuacion = 5;
+  productoSeleccionado = 'Smartphone Tecno Pro 12';
 
-  personaFormulario = form(this.personaModelo, (esquema)=>{
-    required(esquema.nombre, {message: 'Nombre obligatirio'})
-    min(esquema.edad, 18,  {message: 'Debes tener más de 18 años'})
-  })
-
-  constructor(){
-    this.montrarpersonas()
+  get productosFiltrados() {
+    const cat = this.categoriaSeleccionada();
+    if (cat === 'Todas') return this.service.productos();
+    return this.service.productos().filter(p => p.categoria === cat);
   }
 
-  guardarPersona(evento: Event){
-    evento.preventDefault()
-    let persona = {
-      'nombre': this.personaModelo().nombre,
-      'edad': this.personaModelo().edad,
-    }
-    this.personaService.guardar(persona)
-    console.log(persona) 
-    this.limpiar()
-  }
-  montrarpersonas(){
-    this.listaPersonas = this.personaService.mostrar()
+  filtrar(categoria: string) {
+    this.categoriaSeleccionada.set(categoria);
   }
 
-  limpiar(){
-    this.personaModelo.set({
-      nombre:'',
-      edad: 0
-    })
+  guardarResena() {
+    if (!this.nombreCliente.trim() || !this.comentarioCliente.trim()) return;
+
+    const nueva: Resena = {
+      cliente: this.nombreCliente,
+      comentario: this.comentarioCliente,
+      puntuacion: Number(this.puntuacion),
+      productoNombre: this.productoSeleccionado
+    };
+
+    this.service.agregarResena(nueva);
+
+    this.nombreCliente = '';
+    this.comentarioCliente = '';
+    this.puntuacion = 5;
   }
 }
